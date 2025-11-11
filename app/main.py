@@ -9,21 +9,61 @@ st.set_page_config(page_title="Solar Analysis Dashboard", layout="wide")
 st.title("🌞 Solar Farm Analysis Dashboard")
 st.markdown("Compare solar potential across Benin, Sierra Leone, and Togo")
 
+st.markdown(
+    "Upload cleaned CSV files to compare solar potential across countries")
+
+# File uploader for all 3 countries
+st.sidebar.header(" Upload Cleaned Data Files")
+
+st.sidebar.markdown("Upload your cleaned CSV files:")
+benin_file = st.sidebar.file_uploader("Benin Data", type=['csv'], key="benin")
+sierra_file = st.sidebar.file_uploader(
+    "Sierra Leone Data", type=['csv'], key="sierra")
+togo_file = st.sidebar.file_uploader("Togo Data", type=['csv'], key="togo")
+
 
 @st.cache_data
-def load_data():
-    benin = pd.read_csv('data/benin_clean.csv')
-    sierra_leone = pd.read_csv('data/sierraleone_clean.csv')
-    togo = pd.read_csv('data/togo_clean.csv')
+def load_data(benin_file, sierra_file, togo_file):
+    countries_data = []
 
-    benin['Country'] = 'Benin'
-    sierra_leone['Country'] = 'Sierra Leone'
-    togo['Country'] = 'Togo'
+    if benin_file is not None:
+        benin = pd.read_csv(benin_file)
+        benin['Country'] = 'Benin'
+        countries_data.append(benin)
 
-    return pd.concat([benin, sierra_leone, togo], ignore_index=True)
+    if sierra_file is not None:
+        sierra = pd.read_csv(sierra_file)
+        sierra['Country'] = 'Sierra Leone'
+        countries_data.append(sierra)
+
+    if togo_file is not None:
+        togo = pd.read_csv(togo_file)
+        togo['Country'] = 'Togo'
+        countries_data.append(togo)
+
+    if countries_data:
+        return pd.concat(countries_data, ignore_index=True)
+    else:
+        # Return empty dataframe if no files uploaded
+        return pd.DataFrame()
 
 
-df = load_data()
+# Load data based on uploaded files
+df = load_data(benin_file, sierra_file, togo_file)
+
+# Rest of your dashboard code remains the same...
+if not df.empty:
+    # Your existing visualization code here
+    selected_countries = st.sidebar.multiselect(
+        "Select Countries:",
+        options=df['Country'].unique(),
+        default=df['Country'].unique()
+    )
+    # ... continue with your existing dashboard code
+
+else:
+    st.info("👆 Please upload cleaned CSV files in the sidebar to begin analysis")
+    st.image("https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png", width=300)
 
 
 st.sidebar.header("Filters")
