@@ -8,23 +8,23 @@ import matplotlib.pyplot as plt
 import io
 from math import radians
 
-# Page configuration
+
 st.set_page_config(
     page_title="Solar Farm Analytics",
     page_icon="☀️",
     layout="wide"
 )
 
-# Title
+
 st.title("☀️ Solar Farm Analytics Dashboard")
 st.markdown(
     "Upload your cleaned CSV files to analyze solar potential across countries")
 
-# File uploader in sidebar
-st.sidebar.header("📁 Upload Data")
+
+st.sidebar.header(" Upload Data")
 st.sidebar.info("Upload your cleaned CSV files for each country")
 
-# File uploaders for each country
+
 benin_file = st.sidebar.file_uploader("Benin Data", type=['csv'], key="benin")
 sierra_leone_file = st.sidebar.file_uploader(
     "Sierra Leone Data", type=['csv'], key="sierra")
@@ -49,12 +49,10 @@ def create_wind_rose(df, wind_speed_col='WS', wind_dir_col='WD'):
     if wind_speed_col not in df.columns or wind_dir_col not in df.columns:
         return None
 
-    # Clean data
     wind_data = df[[wind_speed_col, wind_dir_col]].dropna()
     if len(wind_data) == 0:
         return None
 
-    # Create wind rose using plotly
     fig = px.bar_polar(
         wind_data,
         r=wind_speed_col,
@@ -73,7 +71,6 @@ def perform_anova_test(df):
     if 'GHI' not in df.columns or 'Country' not in df.columns:
         return None
 
-    # Prepare data for ANOVA
     country_groups = []
     countries = df['Country'].unique()
 
@@ -81,28 +78,24 @@ def perform_anova_test(df):
         country_data = df[df['Country'] == country]['GHI'].dropna()
         country_groups.append(country_data)
 
-    # Perform ANOVA
     if len(country_groups) >= 2:
         f_stat, p_value = stats.f_oneway(*country_groups)
         return f_stat, p_value, countries
     return None
 
 
-# Load data when all files are uploaded
 if benin_file and sierra_leone_file and togo_file:
     with st.spinner("Loading and processing data..."):
-        # Load all datasets
+
         benin_df = load_and_process_file(benin_file, "Benin")
         sierra_leone_df = load_and_process_file(
             sierra_leone_file, "Sierra Leone")
         togo_df = load_and_process_file(togo_file, "Togo")
 
-        # Combine all data
         if all(df is not None for df in [benin_df, sierra_leone_df, togo_df]):
             combined_df = pd.concat(
                 [benin_df, sierra_leone_df, togo_df], ignore_index=True)
 
-            # Store in session state
             st.session_state.combined_df = combined_df
             st.session_state.data_loaded = True
 
@@ -110,11 +103,10 @@ if benin_file and sierra_leone_file and togo_file:
         else:
             st.error("Failed to load one or more files")
 
-# Check if data is loaded
+
 if 'data_loaded' in st.session_state and st.session_state.data_loaded:
     df = st.session_state.combined_df
 
-    # Display basic info
     st.subheader("📊 Dataset Overview")
     col1, col2, col3, col4 = st.columns(4)
 
@@ -132,7 +124,6 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
         if 'Tamb' in df.columns:
             st.metric("Avg Temp", f"{df['Tamb'].mean():.1f} °C")
 
-    # Tabs for different analyses
     tab1, tab2, tab3, tab4 = st.tabs(
         ["🌞 Solar Radiation", "📈 Advanced Analysis", "🌪️ Wind Analysis", "📋 Data Summary"])
 
@@ -158,7 +149,6 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
                              title="DHI Distribution by Country")
                 st.plotly_chart(fig, use_container_width=True)
 
-            # BUBBLE CHART: GHI vs Tamb with RH/BP as bubble size
             if all(col in df.columns for col in ['GHI', 'Tamb', 'RH']):
                 sample_df = df.sample(min(1000, len(df)))
                 fig = px.scatter(sample_df, x='Tamb', y='GHI',
@@ -182,12 +172,11 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
         col1, col2 = st.columns(2)
 
         with col1:
-            # CLEANING IMPACT ANALYSIS
+
             if 'Cleaning' in df.columns:
                 st.subheader("🧹 Cleaning Impact Analysis")
 
                 if 'ModA' in df.columns or 'ModB' in df.columns:
-                    # Compare sensor readings before/after cleaning
                     cleaning_effect = df.groupby('Cleaning').agg({
                         'ModA': 'mean' if 'ModA' in df.columns else None,
                         'ModB': 'mean' if 'ModB' in df.columns else None,
@@ -199,7 +188,6 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
                             "**Average Sensor Readings by Cleaning Status:**")
                         st.dataframe(cleaning_effect, use_container_width=True)
 
-                        # Visualization
                         cleaning_effect_reset = cleaning_effect.reset_index()
                         fig = px.bar(cleaning_effect_reset.melt(id_vars='Cleaning'),
                                      x='Cleaning', y='value', color='variable',
@@ -213,7 +201,7 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
                 st.info("No 'Cleaning' column found in dataset")
 
         with col2:
-            # STATISTICAL TESTING - ANOVA
+
             st.subheader("📊 Statistical Significance Testing")
 
             anova_result = perform_anova_test(df)
@@ -235,7 +223,6 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
                 st.info(
                     "ANOVA test requires 'GHI' and 'Country' columns with sufficient data")
 
-            # Additional stats
             if 'GHI' in df.columns and 'Country' in df.columns:
                 st.subheader("GHI Statistics by Country")
                 ghi_stats = df.groupby('Country')['GHI'].agg(
@@ -248,7 +235,7 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
         col1, col2 = st.columns(2)
 
         with col1:
-            # WIND ROSE PLOT
+
             if all(col in df.columns for col in ['WS', 'WD']):
                 st.subheader("🌪️ Wind Rose")
                 wind_rose_fig = create_wind_rose(df)
@@ -260,7 +247,6 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
                 st.info(
                     "Wind rose requires 'WS' (wind speed) and 'WD' (wind direction) columns")
 
-            # Wind speed distribution
             if 'WS' in df.columns:
                 fig = px.histogram(df, x='WS', color='Country',
                                    title="Wind Speed Distribution by Country",
@@ -268,7 +254,7 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
                 st.plotly_chart(fig, use_container_width=True)
 
         with col2:
-            # Wind speed statistics
+
             if 'WS' in df.columns:
                 st.subheader("Wind Speed Analysis")
 
@@ -276,7 +262,6 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
                     ['mean', 'max', 'std']).round(2)
                 st.dataframe(ws_stats, use_container_width=True)
 
-                # Wind speed vs GHI
                 if 'GHI' in df.columns:
                     sample_df = df.sample(min(500, len(df)))
                     fig = px.scatter(sample_df, x='WS', y='GHI', color='Country',
@@ -309,7 +294,6 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
                              title="Data Distribution by Country")
                 st.plotly_chart(fig, use_container_width=True)
 
-        # FINAL RECOMMENDATIONS
         st.subheader("🎯 Strategic Recommendations")
 
         if 'GHI' in df.columns:
@@ -327,7 +311,6 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
             - **Data Quality**: {df['GHI'].isna().sum() if 'GHI' in df.columns else 'N/A'} missing GHI values
             """)
 
-            # Additional insights based on available data
             if 'Cleaning' in df.columns:
                 cleaning_freq = df['Cleaning'].value_counts(
                     normalize=True).get(1, 0)
@@ -339,7 +322,7 @@ if 'data_loaded' in st.session_state and st.session_state.data_loaded:
                     "**Wind Analysis**: Wind patterns available for site optimization")
 
 else:
-    # Instructions when no data is loaded
+
     st.info("""
     ### 📋 How to use this dashboard:
     
