@@ -45,7 +45,7 @@ _The dashboard screenshots in this repository were taken using sample datasets (
 ### Local Development
 
 ```bash
-git clone https://github.com/your-username/solar-challenge-week1.git
+git clone https://github.com/arwanasir/solar-challenge-week1.git
 cd solar-challenge-week1
 
 
